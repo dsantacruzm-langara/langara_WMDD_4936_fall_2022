@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Tasks from "./components/Tasks";
-import AddTask from "./components/AddTask";
+import AddTaskForm from "./components/AddTaskForm";
 import Footer from "./components/Footer";
 import About from "./components/About";
 
@@ -10,16 +10,7 @@ function App() {
   const [showAddTask, setShowAddTask] = useState(false);
   const [tasks, setTasks] = useState([]);
 
-  useEffect(() => {
-    const getTasks = async () => {
-      const tasksFromServer = await fetchTasks();
-      setTasks(tasksFromServer);
-    };
-
-    getTasks();
-  }, []);
-
-  //Fetch Tasks
+  //Prop Func - Fetch all tasks from Db
   const fetchTasks = async () => {
     const res = await fetch("http://localhost:5790/tasks");
     const data = await res.json();
@@ -27,7 +18,7 @@ function App() {
     return data;
   };
 
-  //Fetch Task
+  //Prop Func - Fetch specific task from Db
   const fetchTask = async (id) => {
     const res = await fetch(`http://localhost:5790/tasks/${id}`);
     const data = await res.json();
@@ -35,7 +26,7 @@ function App() {
     return data;
   };
 
-  //Add Task
+  //Prop Func - Add task to Db
   const addTask = async (task) => {
     const res = await fetch(`http://localhost:5790/tasks`, {
       method: "POST",
@@ -46,15 +37,10 @@ function App() {
     });
 
     const data = await res.json();
-
     setTasks([...tasks, data]);
-
-    // const id = Math.floor(Math.random() * 10000) + 1;
-    // const newTask = { id, ...task };
-    // setTasks([...tasks, newTask]);
   };
 
-  // Delete Task
+  // Delete task from Db
   const deleteTask = async (id) => {
     await fetch(`http://localhost:5790/tasks/${id}`, {
       method: "DELETE",
@@ -63,7 +49,7 @@ function App() {
     setTasks(tasks.filter((task) => task.id !== id));
   };
 
-  //Toggle Reminder
+  //Update reminder status - Toggle Reminder
   const toggleReminder = async (id) => {
     const taskToToggle = await fetchTask(id);
     const updTask = { ...taskToToggle, reminder: !taskToToggle.reminder };
@@ -85,39 +71,50 @@ function App() {
     );
   };
 
+  useEffect(() => {
+    const getTasks = async () => {
+      const tasksFromServer = await fetchTasks();
+      setTasks(tasksFromServer);
+    };
+
+    getTasks();
+  }, []);
+
   return (
-    <Router>
-      <div className="container">
-        <Header
-          onAdd={() => setShowAddTask(!showAddTask)}
-          showAdd={showAddTask}
+    <div className="container">
+      {/* Header Component */}
+      <Header
+        onAdd={() => setShowAddTask(!showAddTask)}
+        showAdd={showAddTask}
+      />
+
+      <Routes>
+        <Route
+          path="/"
+          exact
+          element={
+            <>
+              {/* Display add task form */}
+              {showAddTask && <AddTaskForm onAdd={addTask} />}
+
+              {/* Display Task List or No task message */}
+              {tasks.length > 0 ? (
+                <Tasks
+                  tasks={tasks}
+                  onDelete={deleteTask}
+                  onToggle={toggleReminder}
+                />
+              ) : (
+                "No tasks to show"
+              )}
+            </>
+          }
         />
+        <Route path="/about" element={<About />} />
+      </Routes>
 
-        <Routes>
-          <Route
-            path="/"
-            exact
-            render={(props) => (
-              <>
-                {showAddTask && <AddTask onAdd={addTask} />}
-                {tasks.length > 0 ? (
-                  <Tasks
-                    tasks={tasks}
-                    onDelete={deleteTask}
-                    onToggle={toggleReminder}
-                  />
-                ) : (
-                  "No tasks to show"
-                )}
-              </>
-            )}
-          />
-          <Route path="/about" component={About} />
-        </Routes>
-
-        <Footer />
-      </div>
-    </Router>
+      <Footer />
+    </div>
   );
 }
 
